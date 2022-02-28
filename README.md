@@ -10,6 +10,7 @@ Raymetrics/Licel manufactures.
 ________________________________________________________________________________
 ABOUT ME
 
-Want to contribute or use it? Contact me!
+Want to contribute or use it? Contact us!
 
 hmj.barbosa+git@gmail.com
+gabriel.alexandre@usp.br
