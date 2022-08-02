@@ -19,7 +19,7 @@ def profile_read(fname, dbin=0, dtime=0, ach=0, maxz=0):
         head['file'] = line.group(1)
         
         ## Linha 2
-        regexp = re.compile(' ([\w_ ]*) '                    # site
+        regexp = re.compile(' ([\w]*) '                      # site
                              '([\d]{2}/[\d]{2}/[\d]{4}) '    # datei
                              '([\d]{2}:[\d]{2}:[\d]{2}) '    # houri
                              '([\d]{2}/[\d]{2}/[\d]{4}) '    # datef
@@ -27,13 +27,13 @@ def profile_read(fname, dbin=0, dtime=0, ach=0, maxz=0):
                              '([\d]{4}) '                    # alt
                              '(-?[\d]{3}\.\d) '              # lon
                              '(-?[\d]{3}\.\d) '              # lat
-                             '(-?[\d]{2}) '                  # zen
+                             '(-?[\d]{1,2}) '                # zen
                              '[\d]{2} '                      # ---- empty
                              '([\d]{2}\.\d) '                # T0
                              '([\d]{4}\.\d)')                # P0 
         
         line = regexp.search(fp.readline())
-    
+        
         head['site']  = line.group(1)
         head['datei'] = line.group(2)
         head['houri'] = line.group(3)
