@@ -9,12 +9,12 @@ def profile_read(fname, dbin=0, dtime=0, ach=0, maxz=0):
     
     # Abrindo o arquivo
     
-    with open(fname, 'r', encoding='utf8', errors='ignore') as fp:
+    with open(fname, 'r', encoding='utf8', errors='ignore', newline='\r\n') as fp:
         
         ## Linha 1
         regexp = re.compile('([\w]{9}.[\d]{3})')             # filename
         
-        line = regexp.search(fp.readline())
+        line = regexp.search(fp.readline().rstrip())
         
         head['file'] = line.group(1)
         
@@ -32,7 +32,7 @@ def profile_read(fname, dbin=0, dtime=0, ach=0, maxz=0):
                              '([\d]{2}\.\d) '                # T0
                              '([\d]{4}\.\d)')                # P0 
         
-        line = regexp.search(fp.readline())
+        line = regexp.search(fp.readline().rstrip())
         
         head['site']  = line.group(1)
         head['datei'] = line.group(2)
@@ -64,10 +64,12 @@ def profile_read(fname, dbin=0, dtime=0, ach=0, maxz=0):
                             '([\d]{4}) '      # nhz
                             '([\d]{7}) '      # nshoots2
                             '([\d]{4}) '      # nhz2
-                            '([\d]{2}) ')     # nch
+                            '([\d]{2})')     # nch
         
-        line = regexp.search(fp.readline())
-        
+        line = regexp.search(fp.readline().rstrip())
+        #print(' tell=',fp.tell())
+        #print(' line=',line.string,'|')
+
         head['nshoots']  = int(line.group(1))
         head['nhz']      = int(line.group(2))
         head['nshoots2'] = int(line.group(3))
@@ -95,9 +97,19 @@ def profile_read(fname, dbin=0, dtime=0, ach=0, maxz=0):
                             '([\w]{3})')           # tr
 
                             
-        channels = ''.join([next(fp) for x in range(nch)])  # Aqui eu imprimo todos os canais
-                                                            
+        #print(' tell=',fp.tell())
+        #channels = ''.join([next(fp) for x in range(nch)])  # Aqui eu imprimo todos os canais
+        channels = ''.join([fp.readline().rstrip() for x in range(nch)])  # Aqui eu imprimo todos os canais
+        #print(channels)
+        #print('nch=',nch)
+        #print('type=',type(channels))
+        #print('size=',len(channels))
+        #print('tell=',fp.tell())
+        
         lines = np.array(regexp.findall(channels))
+        #print('lines=',lines)
+        #print('type=',type(lines))
+        #print('size=',lines.shape)
         
         head['ch']['active']  = lines[:, 0].astype(int)
         head['ch']['photons'] = lines[:, 1].astype(int)
@@ -122,13 +134,30 @@ def profile_read(fname, dbin=0, dtime=0, ach=0, maxz=0):
             raw = np.zeros((max_linhas, nch))
         else:
             phy = np.zeros((max_linhas, 1))
-            raw = np.zeros((max_linhas, 1))            
- 
+            raw = np.zeros((max_linhas, 1))
+            
+        # stop our reading of the file so far (which was in ascii mode)
+        # save current position on the file (last byte read as text)
+        endtxt = fp.tell()
+        #print('end of text = ',endtxt)
+
+    # start reading in binary mode we need to save save the last file position
+    with open(fname, 'rb') as fp:
+        # first thing to do is update the position
+        fp.seek(endtxt, 0)
         # conversion factor from raw to physical units
         for ch in range(nch):
+            #print('ch = ',ch, ' tell=',fp.tell())
             nz = head['ch']['ndata'][ch]
             trash=np.fromfile(fp, np.byte, 2)
+            #print(trash)
+            #trash=fp.readline()
+            #trash='x'
+            #fp.seek(2, 1)
+            #print('                 lixo len= ',len(trash), ' value=', ":".join("{:02x}".format(ord(c)) for c in trash))
+            #print('         tell=',fp.tell(),'  depois da leitura trash')
             tmpraw = np.fromfile(fp, np.int32, nz)
+            #print('         tell=',fp.tell(),'  depois da leitura de nz')
             if ch == ach or ach == 0:
                 if head['ch']['photons'][ch] == 0:
                     dScale = head['ch']['nshoots'][ch]*(2**head['ch']['bits'][ch])/(head['ch']['discr'][ch]*1e3)
@@ -154,7 +183,7 @@ def profile_read(fname, dbin=0, dtime=0, ach=0, maxz=0):
             else:
                 maxz = min(nz, maxz)
                 head['ch']['ndata'][ch] = maxz
-            
+
             if ach == 0:
                 phy[:maxz, ch] = tmpphy[:maxz]
                 raw[:maxz, ch] = tmpraw[:maxz]
